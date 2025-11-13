@@ -17,13 +17,12 @@ from sklearn.metrics import precision_recall_fscore_support
 from train import train_one_epoch, evaluate
 import json
 
-
-
 # -------------------------
 # CONFIG
 # -------------------------
 
-CSV_PATH = "training_data.csv"
+GLYPH_PATH = "glyph_images/"
+CSV_PATH = "training_data_up.csv"
 BATCH_SIZE = 16
 NUM_EPOCHS = 30
 VAL_SPLIT = 0.2
