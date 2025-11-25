@@ -5,3 +5,9 @@ __pycache__/
 *.py[cod]
 
 *.pt
+
+runs/
+all_images/
+glyphs/
+Main_Elements/
+MainElem_Original/
