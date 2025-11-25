@@ -1,4 +1,3 @@
-# data.py
 import numpy as np
 import pandas as pd
 
@@ -11,18 +10,9 @@ from PIL import Image
 from torchvision import transforms
 from torchvision.models import ResNet18_Weights
 
-
 IMAGE_PATH_COL = "full_image_path"
 
-
 class GlyphDataset(Dataset):
-    """
-    Simple multi-label dataset for codex glyphs.
-    - df: DataFrame with:
-        - IMAGE_PATH_COL column
-        - label_columns: multi-hot 0/1 labels (one column per element).
-    """
-
     def __init__(self, df: pd.DataFrame, label_columns: List[str], transform=None):
         self.df = df.reset_index(drop=True)
         self.label_columns = label_columns
@@ -81,13 +71,29 @@ def load_dataframe_with_labels(csv_path: str):
     return df, label_columns
 
 
-def build_default_transforms():
+def build_default_transforms(size: int = 224) -> transforms.Compose:
     return transforms.Compose([
-        transforms.Resize((224, 224)),
-        transforms.RandomHorizontalFlip(),
+        transforms.Resize((size, size)),
+        transforms.RandomHorizontalFlip(p=0.5),
+        transforms.RandomRotation(degrees=15),  # ±15° rotation
         transforms.RandomApply([
-            transforms.GaussianBlur(kernel_size=5),  # smaller & sane
-            transforms.RandomGrayscale(p=0.5),      # keeps 3 channels
+            transforms.ColorJitter(
+                brightness=0.2,
+                contrast=0.2,
+                saturation=0.2,
+                hue=0.1
+            ),
+        ], p=0.5),
+        transforms.RandomPerspective(distortion_scale=0.2, p=0.3),
+        transforms.RandomAffine(
+            degrees=0,
+            translate=(0.1, 0.1),
+            scale=(0.9, 1.1),
+            shear=None
+        ),
+        transforms.RandomApply([
+            transforms.GaussianBlur(kernel_size=5),
+            transforms.RandomGrayscale(p=0.5),
         ], p=0.3),
         transforms.ToTensor(),
         transforms.Normalize(
