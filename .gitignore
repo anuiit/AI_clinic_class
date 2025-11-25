@@ -7,7 +7,7 @@ __pycache__/
 *.pt
 
 runs/
-all_images/
+All_images/
 glyphs/
 Main_Elements/
 MainElem_Original/
