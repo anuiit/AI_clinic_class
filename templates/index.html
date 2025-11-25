@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Inference</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .upload-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: #999;
+        }
+
+        .upload-area.dragover {
+            border-color: #007bff;
+            background: #f0f8ff;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-text {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            max-width: 300px;
+        }
+
+        .threshold-value {
+            font-weight: 600;
+            color: #333;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        .gradcam-container img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .predictions {
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .prediction-item:hover {
+            background: #f9f9f9;
+        }
+
+        .prediction-item.active {
+            background: #e3f2fd;
+        }
+
+        .prediction-item:last-child {
+            border-bottom: none;
+        }
+
+        .label-name {
+            font-size: 14px;
+            color: #333;
+        }
+
+        .confidence {
+            font-size: 14px;
+            font-weight: 600;
+            color: #007bff;
+        }
+
+        .confidence-bar {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: #007bff;
+            transition: width 0.3s;
+        }
+
+        .gradcam-container {
+            position: relative;
+        }
+
+        .gradcam-container img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .gradcam-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .history-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .history-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .history-item:hover {
+            background: #f9f9f9;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .history-image-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .history-timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .history-predictions {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+
+        .no-predictions {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Model Inference</h1>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-text">Click to upload or drag and drop</div>
+                <div style="color: #999; font-size: 14px;">PNG, JPG up to 16MB</div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <div class="controls">
+                <label for="threshold">Threshold:</label>
+                <input type="range" id="threshold" min="0" max="100" value="50" step="1">
+                <span class="threshold-value"><span id="thresholdValue">50</span>%</span>
+                <button id="analyzeBtn" disabled>Analyze</button>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <h2>Results</h2>
+            <div class="results-grid">
+                <div>
+                    <h3 style="font-size: 16px; margin-bottom: 15px; font-weight: 600;">Grad-CAM Visualization</h3>
+                    <div class="gradcam-container">
+                        <img id="gradcamImg" src="" alt="Grad-CAM">
+                        <div class="gradcam-label"></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="font-size: 16px; margin-bottom: 15px; font-weight: 600;">Predictions (click to see Grad-CAM)</h3>
+                    <div class="predictions" id="predictions"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h2>History</h2>
+            <div id="historyContainer">
+                <div class="loading">No history yet</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const thresholdSlider = document.getElementById('threshold');
+        const thresholdValue = document.getElementById('thresholdValue');
+        const resultsSection = document.getElementById('resultsSection');
+        const predictionsDiv = document.getElementById('predictions');
+        const gradcamImg = document.getElementById('gradcamImg');
+        const historyContainer = document.getElementById('historyContainer');
+
+        let selectedFile = null;
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                analyzeBtn.disabled = false;
+                uploadArea.querySelector('.upload-text').textContent = `Selected: ${file.name}`;
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                selectedFile = file;
+                fileInput.files = e.dataTransfer.files;
+                analyzeBtn.disabled = false;
+                uploadArea.querySelector('.upload-text').textContent = `Selected: ${file.name}`;
+            }
+        });
+
+        // Threshold slider
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdValue.textContent = e.target.value;
+        });
+
+        // Analyze button
+        analyzeBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+            resultsSection.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            formData.append('threshold', thresholdSlider.value / 100);
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                    loadHistory();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze';
+            }
+        });
+
+        function displayResults(data) {
+            resultsSection.style.display = 'block';
+
+            // Store gradcam data
+            window.currentGradcams = data.gradcam || [];
+
+            // Display first Grad-CAM if available
+            if (window.currentGradcams.length > 0) {
+                gradcamImg.src = 'data:image/png;base64,' + window.currentGradcams[0].gradcam;
+                document.querySelector('.gradcam-label').textContent = window.currentGradcams[0].label + ' - ' + window.currentGradcams[0].confidence.toFixed(1) + '%';
+            }
+
+            // Display predictions
+            if (data.predictions.length === 0) {
+                predictionsDiv.innerHTML = '<div class="no-predictions">No predictions above threshold</div>';
+            } else {
+                predictionsDiv.innerHTML = data.predictions.map((pred, idx) => `
+                    <div class="prediction-item ${idx === 0 ? 'active' : ''}" onclick="showGradcam(${idx})">
+                        <div>
+                            <div class="label-name">${pred.label}</div>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${pred.confidence}%"></div>
+                            </div>
+                        </div>
+                        <div class="confidence">${pred.confidence.toFixed(1)}%</div>
+                    </div>
+                `).join('');
+            }
+
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showGradcam(index) {
+            if (!window.currentGradcams || index >= window.currentGradcams.length) return;
+            
+            const gradcam = window.currentGradcams[index];
+            gradcamImg.src = 'data:image/png;base64,' + gradcam.gradcam;
+            document.querySelector('.gradcam-label').textContent = gradcam.label + ' - ' + gradcam.confidence.toFixed(1) + '%';
+            
+            // Update active state
+            document.querySelectorAll('.prediction-item').forEach((item, idx) => {
+                item.classList.toggle('active', idx === index);
+            });
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/history');
+                const history = await response.json();
+
+                if (history.length === 0) {
+                    historyContainer.innerHTML = '<div class="loading">No history yet</div>';
+                    return;
+                }
+
+                historyContainer.innerHTML = history.map((item, idx) => {
+                    const date = new Date(item.timestamp);
+                    const topPreds = item.predictions.slice(0, 3).map(p => p.label).join(', ');
+                    
+                    return `
+                        <div class="history-item" onclick="showHistoryItem(${idx})">
+                            <div class="history-header">
+                                <div class="history-image-name">${item.image}</div>
+                                <div class="history-timestamp">${date.toLocaleString()}</div>
+                            </div>
+                            <div class="history-predictions">${topPreds || 'No predictions'}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Store history data
+                window.historyData = history;
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        function showHistoryItem(index) {
+            const item = window.historyData[index];
+            displayResults({ predictions: item.predictions, gradcam: item.gradcam, image: item.image });
+        }
+
+        // Load history on page load
+        loadHistory();
+    </script>
+</body>
+</html>
